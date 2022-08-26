@@ -16,7 +16,7 @@
       (set-first-visible-item lowerbound)))
   (send tfPC set-value (fo *pc*)))
 (define (inc-pc) (goto (+ *pc* 1)))
-(define (r-positive) (<= (bitwise-ior #o10000000000 *r*) 0))
+(define (r-positive) (<= (bitwise-and #o10000000000 *r*) 0))
 (define (setr x)
   (set! *r* x)
   (send tfR set-value (fox x)))
@@ -34,7 +34,7 @@
     (refresh-memory-viewer)))
 
 (define (w-abs x)
-  (bitwise-and #o10000000000 x))
+  (bitwise-and #o07777777777 x))
 
 (define (fo x) (format "~o" x))
 (define (fox x)
@@ -105,8 +105,9 @@
         [(#o05 #o15) (setmem y (getmem x)) (setr (getmem x)) (inc-pc)]
         [(#o07 #o27) (input-from-tape y) (inc-pc)]
         [else
-         (let ((f (bitwise-and #o70 opn))
+         (let ((f (quotient (bitwise-and #o70 opn) #o10))
                (s (bitwise-and #o7 opn)))
+           (displayln f)(displayln s)
            (let ((op (case s
                        ((0) w-add)
                        ((1) w-sub)
@@ -117,6 +118,7 @@
                ((0) (let ((r (op (getmem x) (getmem y))))
                       (setr r) (setmem y r) (inc-pc)))
                ((1) (let ((r (op (getmem x) (getmem y))))
+                      (displayln r)
                       (setr r) (inc-pc)))
                ((2) (let ((r (op *r* (getmem x))))
                       (setr r) (setmem y r) (inc-pc)))

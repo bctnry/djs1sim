@@ -76,6 +76,22 @@
              ((6) (format "R=[~o]=R~a[~o]; PRINT" y op x))
              ((7) (format "R=ABS(R)~aABS([~o])" op x)))))])))
 
+
+(define (to-normal a)
+  (let ((a (w-abs a)) (s (quotient (bitwise-and #o10000000000 a) #o10000000000)))
+    (if (> s 0) (- a) a)))
+(define (from-normal a)
+  (bitwise-ior (if (> a 0) 0 #o10000000000) (bitwise-and (abs a) #o7777777777)))
+(define (w-add a b)
+  (from-normal (+ (to-normal a) (to-normal b))))
+(define (w-sub a b)
+  (from-normal (- (to-normal a) (to-normal b))))
+(define (w-div a b)
+  (from-normal (quotient (to-normal a) (to-normal b))))
+(define (w-mul a b)
+  (from-normal (* (to-normal a) (to-normal b))))
+  
+
 (define (step)
   (let ((x (vector-ref *memory* *pc*)))
     (let-values ([(opn x y) (dissect-instr x)])
@@ -92,10 +108,10 @@
          (let ((f (bitwise-and #o70 opn))
                (s (bitwise-and #o7 opn)))
            (let ((op (case s
-                       ((0) (λ (a b) (modulo (+ a b) 2147483648)))
-                       ((1) (λ (a b) (modulo (- a b) 2147483648)))
-                       ((2) (λ (a b) (modulo (/ a b) 2147483648)))
-                       ((3) (λ (a b) (modulo (* a b) 2147483648)))
+                       ((0) w-add)
+                       ((1) w-sub)
+                       ((2) w-div)
+                       ((3) w-mul)
                        ((6) bitwise-and))))
              (case f
                ((0) (let ((r (op (getmem x) (getmem y))))
